@@ -1,0 +1,27 @@
+package com.scc.dao;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+/** Opens SQLite connections with foreign key constraints switched on. */
+public final class DatabaseConnection {
+
+    private static final String URL = "jdbc:sqlite:studentpaymentsystem.db";
+
+    private DatabaseConnection() {
+    }
+
+    /** Every connection gets PRAGMA foreign_keys = ON (SQLite has it off by default). */
+    public static Connection getConnection() throws SQLException {
+        Connection conn = DriverManager.getConnection(URL);
+        try (Statement st = conn.createStatement()) {
+            st.execute("PRAGMA foreign_keys = ON;");
+        } catch (SQLException e) {
+            conn.close();
+            throw e;
+        }
+        return conn;
+    }
+}
