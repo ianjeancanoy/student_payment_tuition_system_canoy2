@@ -6,16 +6,19 @@ student_payment_system_canoy2f/
 ├── src/main/java/com/scc/
 │   ├── dao/
 │   │   ├── DatabaseConnection.java   (PRAGMA foreign_keys = ON)
-│   │   ├── DatabaseInitializer.java  (creates the users table)
-│   │   └── UserDao.java
+│   │   ├── DatabaseInitializer.java
+│   │   └── UserDao.java              (getAllUsers, getPendingUsers, approveUser)
 │   ├── model/
 │   │   └── User.java                 (Java Record)
 │   ├── ui/
-│   │   └── Authentication.java       (register, login, role menus)
-│   └── Main.java                     (entry point)
+│   │   ├── AdminMenu.java            [NEW]
+│   │   ├── Authentication.java
+│   │   ├── StudentMenu.java          [NEW]
+│   │   └── CashierMenu.java          [NEW]
+│   └── Main.java
 ├── src/main/resources/
 ├── pom.xml
-└── studentpaymentsystem.db           (database file in project root)
+└── studentpaymentsystem.db
 ```
 
 ## Run

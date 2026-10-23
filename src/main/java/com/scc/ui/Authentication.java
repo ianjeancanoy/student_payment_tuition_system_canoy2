@@ -3,13 +3,12 @@ package com.scc.ui;
 import com.scc.dao.UserDao;
 import com.scc.model.User;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
 /**
  * Handles register, login and role routing.
- * The same Scanner and UserDao instances are used by every menu.
+ * The same Scanner and UserDao instances are passed to every menu.
  * No SQL lives here; all database work goes through UserDao.
  */
 public class Authentication {
@@ -17,9 +16,16 @@ public class Authentication {
     private final Scanner scanner;
     private final UserDao userDao;
 
+    private final StudentMenu studentMenu;
+    private final CashierMenu cashierMenu;
+    private final AdminMenu adminMenu;
+
     public Authentication(Scanner scanner, UserDao userDao) {
         this.scanner = scanner;
         this.userDao = userDao;
+        this.studentMenu = new StudentMenu(scanner, userDao);
+        this.cashierMenu = new CashierMenu(scanner, userDao);
+        this.adminMenu = new AdminMenu(scanner, userDao);
     }
 
     public void start() {
@@ -41,8 +47,6 @@ public class Authentication {
             }
         }
     }
-
-    // ------------------------------------------------------------ register
 
     private void register() {
         System.out.println("\n--- Register ---");
@@ -86,8 +90,6 @@ public class Authentication {
         }
     }
 
-    // --------------------------------------------------------------- login
-
     private void login() {
         System.out.println("\n--- Login ---");
         System.out.print("Username: ");
@@ -107,98 +109,10 @@ public class Authentication {
 
         // route to the menu that matches the user's role
         switch (user.roles()) {
-            case "STUDENT" -> studentMenu(user);
-            case "CASHIER" -> cashierMenu(user);
-            case "ADMINISTRATOR" -> adminMenu(user);
+            case "STUDENT" -> studentMenu.show(user);
+            case "CASHIER" -> cashierMenu.show(user);
+            case "ADMINISTRATOR" -> adminMenu.show(user);
             default -> System.out.println("Unknown role: " + user.roles());
-        }
-    }
-
-    // ----------------------------------------------------- role-based menus
-
-    private void studentMenu(User user) {
-        boolean loggedIn = true;
-        while (loggedIn) {
-            System.out.println("\n--- Student Menu ---");
-            System.out.println("1. View Profile");
-            System.out.println("2. Logout");
-            System.out.print("Choose: ");
-            switch (scanner.nextLine().trim()) {
-                case "1" -> printProfile(user);
-                case "2" -> loggedIn = logout();
-                default -> System.out.println("Invalid choice.");
-            }
-        }
-    }
-
-    private void cashierMenu(User user) {
-        boolean loggedIn = true;
-        while (loggedIn) {
-            System.out.println("\n--- Cashier Menu ---");
-            System.out.println("1. View Profile");
-            System.out.println("2. Logout");
-            System.out.print("Choose: ");
-            switch (scanner.nextLine().trim()) {
-                case "1" -> printProfile(user);
-                case "2" -> loggedIn = logout();
-                default -> System.out.println("Invalid choice.");
-            }
-        }
-    }
-
-    private void adminMenu(User user) {
-        boolean loggedIn = true;
-        while (loggedIn) {
-            System.out.println("\n--- Administrator Menu ---");
-            System.out.println("1. View All Accounts");
-            System.out.println("2. Approve Pending Account");
-            System.out.println("3. Logout");
-            System.out.print("Choose: ");
-            switch (scanner.nextLine().trim()) {
-                case "1" -> printUsers(userDao.findAll());
-                case "2" -> approveAccount();
-                case "3" -> loggedIn = logout();
-                default -> System.out.println("Invalid choice.");
-            }
-        }
-    }
-
-    private void approveAccount() {
-        List<User> pending = userDao.findPending();
-        if (pending.isEmpty()) {
-            System.out.println("No pending accounts.");
-            return;
-        }
-        printUsers(pending);
-        System.out.print("Enter the ID to approve: ");
-        try {
-            int id = Integer.parseInt(scanner.nextLine().trim());
-            if (userDao.approve(id)) {
-                System.out.println("Account approved (status ACTIVE).");
-            } else {
-                System.out.println("Could not approve that account.");
-            }
-        } catch (NumberFormatException e) {
-            System.out.println("Please enter a valid number.");
-        }
-    }
-
-    // ------------------------------------------------------------- helpers
-
-    private boolean logout() {
-        System.out.println("Logged out.");
-        return false; // ends the menu loop
-    }
-
-    private void printProfile(User user) {
-        System.out.println("ID: " + user.id() + "\nUsername: " + user.username()
-                + "\nRole: " + user.roles() + "\nStatus: " + user.status());
-    }
-
-    private void printUsers(List<User> users) {
-        System.out.printf("%-5s %-20s %-15s %-10s%n", "ID", "USERNAME", "ROLE", "STATUS");
-        for (User u : users) {
-            System.out.printf("%-5d %-20s %-15s %-10s%n", u.id(), u.username(), u.roles(), u.status());
         }
     }
 }

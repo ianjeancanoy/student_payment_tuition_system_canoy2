@@ -14,10 +14,8 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 
-/** All SQL for the users table. */
+/** All SQL for the users table. Every query uses a parameterized PreparedStatement. */
 public class UserDao {
-
-    private static final String COLUMNS = "id, username, password, roles, status";
 
     public boolean usernameExists(String username) {
         String sql = "SELECT 1 FROM users WHERE username = ?";
@@ -48,7 +46,7 @@ public class UserDao {
 
     /** Verifies username and password against the database. */
     public Optional<User> login(String username, String password) {
-        String sql = "SELECT " + COLUMNS + " FROM users WHERE username = ? AND password = ?";
+        String sql = "SELECT id, username, password, roles, status FROM users WHERE username = ? AND password = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
@@ -64,27 +62,9 @@ public class UserDao {
         return Optional.empty();
     }
 
-    public List<User> findAll() {
-        return query("SELECT " + COLUMNS + " FROM users ORDER BY id");
-    }
-
-    public List<User> findPending() {
-        return query("SELECT " + COLUMNS + " FROM users WHERE status = 'PENDING' ORDER BY id");
-    }
-
-    /** Sets an account's status to ACTIVE. */
-    public boolean approve(int userId) {
-        String sql = "UPDATE users SET status = 'ACTIVE' WHERE id = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, userId);
-            return ps.executeUpdate() == 1;
-        } catch (SQLException e) {
-            return false;
-        }
-    }
-
-    private List<User> query(String sql) {
+    /** Returns all registered accounts regardless of role. */
+    public List<User> getAllUsers() {
+        String sql = "SELECT id, username, password, roles, status FROM users ORDER BY id";
         List<User> users = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -96,6 +76,36 @@ public class UserDao {
             throw new RuntimeException(e);
         }
         return users;
+    }
+
+    /** Returns every account with status PENDING, across all roles. */
+    public List<User> getPendingUsers() {
+        String sql = "SELECT id, username, password, roles, status FROM users WHERE status = ? ORDER BY id";
+        List<User> users = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, "PENDING");
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    users.add(map(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return users;
+    }
+
+    /** Changes a user's status to APPROVED. Returns true if a row was updated. */
+    public boolean approveUser(int userId) {
+        String sql = "UPDATE users SET status = 'APPROVED' WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            return ps.executeUpdate() == 1;
+        } catch (SQLException e) {
+            return false;
+        }
     }
 
     private User map(ResultSet rs) throws SQLException {
